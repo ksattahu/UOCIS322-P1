@@ -18,8 +18,8 @@ import logging   # Better than print statements
 logging.basicConfig(format='%(levelname)s:%(message)s',
                     level=logging.INFO)
 log = logging.getLogger(__name__)
-# Logging level may be overridden by configuration 
-
+# Logging level may be overridden by configuration
+import os        #
 import socket    # Basic TCP/IP communication on the internet
 import _thread   # Response computation runs concurrently with main program
 
@@ -58,16 +58,6 @@ def serve(sock, func):
         (clientsocket, address) = sock.accept()
         _thread.start_new_thread(func, (clientsocket,))
 
-
-##
-# Starter version only serves cat pictures. In fact, only a
-# particular cat picture.  This one.
-##
-CAT = """
-     ^ ^
-   =(   )=
-"""
-
 # HTTP response codes, as the strings we will actually send.
 # See:  https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 # or    http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
@@ -88,11 +78,39 @@ def respond(sock):
     request = str(request, encoding='utf-8', errors='strict')
     log.info("--- Received request ----")
     log.info("Request was {}\n***\n".format(request))
-
     parts = request.split()
+    #log.info("Parts to str: {}\n".format(str(parts)))
+
     if len(parts) > 1 and parts[0] == "GET":
-        transmit(STATUS_OK, sock)
-        transmit(CAT, sock)
+        docroot = get_options().DOCROOT
+        docrootls = os.listdir(docroot)
+        #log.info("Docroot to str: {}\n".format(str(docroot)))
+        #log.info("Docrootls to str: {}\n".format(str(docrootls)))
+        fpath = str(parts[1])
+        if "~" in fpath:
+            transmit(STATUS_FORBIDDEN, sock)
+        elif "//" in fpath:
+            transmit(STATUS_FORBIDDEN, sock)
+        elif "~" in fpath:
+            transmit(STATUS_FORBIDDEN, sock)
+        else:
+            for file in docrootls:
+                #log.info("file to str: {}\n".format(str(file)))
+                #log.info("fpath to str: {}\n".format(fpath))
+                if fpath.endswith(str(file)):
+                    transmit(STATUS_OK, sock)
+                    #log.info("Docroot + file to str: {}\n".format(str(docroot + file)))
+                    with open(docroot + "/" + str(file)) as doc:
+                        transmit(doc.read(), sock)
+                    sock.shutdown(socket.SHUT_RDWR)
+                    sock.close()
+                    return
+                elif file == docrootls[-1]:
+                    transmit(STATUS_NOT_FOUND, sock)
+                    sock.shutdown(socket.SHUT_RDWR)
+                    sock.close()
+                    return
+
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
@@ -106,6 +124,7 @@ def respond(sock):
 def transmit(msg, sock):
     """It might take several sends to get the whole message out"""
     sent = 0
+    #log.info("TRANSMIT {}\n".format(sent))
     while sent < len(msg):
         buff = bytes(msg[sent:], encoding="utf-8")
         sent += sock.send(buff)

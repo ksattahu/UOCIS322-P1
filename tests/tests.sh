@@ -5,12 +5,8 @@
 # Example: tests.sh http://something.somewhere.someplace.someext:5000/sample.html
 #
 URLbase=$1
-
 # Test cases for the body
-#
-
-function expect_body() {
-    # Args
+function expect_body () {
     path=$1
     expect=$2
     curl --silent ${URLbase}/${path} >/tmp/,$$
@@ -20,8 +16,7 @@ function expect_body() {
         echo "*** FAIL *** expecting ${expect} in  ${URLbase}/${path}"
     fi
 }
-
-function expect_status() {
+function expect_status () {
     # Args
     path=$1
     expect=$2
@@ -32,8 +27,6 @@ function expect_status() {
         echo "*** FAIL *** expecting status ${expect} in ${URLbase}/${path} "
     fi
 }
-
-
 expect_body trivia.html  "Seriously"
 expect_status nosuch.html "404"
 expect_status there/theybe.html 404
